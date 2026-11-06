@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMI Dashboard</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; overflow: hidden; }
+        /* 스크롤바 숨기기 스타일 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <!-- 앱이 렌더링될 최상위 루트 컨테이너 -->
+    <div id="root"></div>
+
+    <script>
+        // 전역 상태 (React의 useState 역할)
+        const state = {
+            activeMenu: 'dashboard',
+            currentTheme: 'warm',
+            resolution: '1920x1080',
+            isDropdownOpen: false,
+            isSettingsModalOpen: false
+        };
+
+        // 5가지 테마 설정 객체
+        const themes = {
+            warm: {
+                name: 'Warm Orange',
+                bg: 'bg-[#FDF8F3]', text: 'text-stone-800', textMuted: 'text-stone-500', border: 'border-stone-200',
+                sidebarBg: 'bg-[#FCFAEF]', sidebarText: 'text-stone-600', sidebarActiveBg: 'bg-orange-100', sidebarActiveText: 'text-orange-800 font-bold', sidebarHover: 'hover:bg-stone-100 hover:text-stone-900',
+                logo: 'text-orange-600',
+                headerBg: 'bg-white',
+                cardBg: 'bg-white',
+                tableHeaderBg: 'bg-stone-50', tableRowHover: 'hover:bg-amber-50/30',
+                primaryText: 'text-orange-600', primaryBg: 'bg-orange-50', primaryHover: 'hover:text-orange-800 hover:bg-orange-100',
+                themeBtnColor: 'bg-orange-500',
+                statusBadges: {
+                    '미응답': 'bg-red-100 text-red-800',
+                    '도움 요청': 'bg-orange-100 text-orange-800',
+                    '응답 완료': 'bg-emerald-100 text-emerald-800',
+                    '연결 오류': 'bg-stone-100 text-stone-800'
+                }
+            },
+            blue: {
+                name: 'Trust Blue',
+                bg: 'bg-slate-50', text: 'text-slate-800', textMuted: 'text-slate-500', border: 'border-slate-200',
+                sidebarBg: 'bg-slate-900', sidebarText: 'text-slate-300', sidebarActiveBg: 'bg-blue-900/60', sidebarActiveText: 'text-blue-100 font-bold', sidebarHover: 'hover:bg-slate-800 hover:text-slate-100',
+                logo: 'text-blue-400',
+                headerBg: 'bg-white',
+                cardBg: 'bg-white',
+                tableHeaderBg: 'bg-slate-100', tableRowHover: 'hover:bg-blue-50/50',
+                primaryText: 'text-blue-600', primaryBg: 'bg-blue-50', primaryHover: 'hover:text-blue-800 hover:bg-blue-100',
+                themeBtnColor: 'bg-blue-600',
+                statusBadges: {
+                    '미응답': 'bg-red-100 text-red-800',
+                    '도움 요청': 'bg-amber-100 text-amber-800',
+                    '응답 완료': 'bg-blue-100 text-blue-800',
+                    '연결 오류': 'bg-slate-200 text-slate-800'
+                }
+            },
+            green: {
+                name: 'Healing Green',
+                bg: 'bg-stone-100', text: 'text-stone-800', textMuted: 'text-stone-500', border: 'border-stone-200',
+                sidebarBg: 'bg-teal-900', sidebarText: 'text-teal-100/70', sidebarActiveBg: 'bg-teal-800', sidebarActiveText: 'text-white font-bold', sidebarHover: 'hover:bg-teal-800/50 hover:text-white',
+                logo: 'text-teal-300',
+                headerBg: 'bg-white',
+                cardBg: 'bg-white',
+                tableHeaderBg: 'bg-stone-200/50', tableRowHover: 'hover:bg-teal-50/50',
+                primaryText: 'text-teal-700', primaryBg: 'bg-teal-50', primaryHover: 'hover:text-teal-900 hover:bg-teal-100',
+                themeBtnColor: 'bg-teal-600',
+                statusBadges: {
+                    '미응답': 'bg-rose-100 text-rose-800',
+                    '도움 요청': 'bg-amber-100 text-amber-800',
+                    '응답 완료': 'bg-teal-100 text-teal-800',
+                    '연결 오류': 'bg-stone-200 text-stone-800'
+                }
+            },
+            dark: {
+                name: 'Dark Mode',
+                bg: 'bg-gray-900', text: 'text-gray-100', textMuted: 'text-gray-400', border: 'border-gray-700',
+                sidebarBg: 'bg-black', sidebarText: 'text-gray-400', sidebarActiveBg: 'bg-indigo-900/50', sidebarActiveText: 'text-indigo-400 font-bold', sidebarHover: 'hover:bg-gray-800 hover:text-gray-200',
+                logo: 'text-indigo-400',
+                headerBg: 'bg-gray-800',
+                cardBg: 'bg-gray-800',
+                tableHeaderBg: 'bg-gray-800', tableRowHover: 'hover:bg-gray-700/50',
+                primaryText: 'text-indigo-400', primaryBg: 'bg-indigo-900/30', primaryHover: 'hover:text-indigo-300 hover:bg-indigo-900/60',
+                themeBtnColor: 'bg-gray-900 border border-gray-600',
+                statusBadges: {
+                    '미응답': 'bg-red-900/50 text-red-400 border border-red-800/50',
+                    '도움 요청': 'bg-orange-900/50 text-orange-400 border border-orange-800/50',
+                    '응답 완료': 'bg-emerald-900/50 text-emerald-400 border border-emerald-800/50',
+                    '연결 오류': 'bg-gray-700 text-gray-300 border border-gray-600'
+                }
+            },
+            mono: {
+                name: 'Clean Mono',
+                bg: 'bg-gray-100', text: 'text-gray-900', textMuted: 'text-gray-500', border: 'border-gray-300',
+                sidebarBg: 'bg-white', sidebarText: 'text-gray-600', sidebarActiveBg: 'bg-gray-200', sidebarActiveText: 'text-black font-bold', sidebarHover: 'hover:bg-gray-100 hover:text-black',
+                logo: 'text-black',
+                headerBg: 'bg-white',
+                cardBg: 'bg-white',
+                tableHeaderBg: 'bg-gray-50', tableRowHover: 'hover:bg-gray-100',
+                primaryText: 'text-black', primaryBg: 'bg-gray-200', primaryHover: 'hover:text-gray-700 hover:bg-gray-300',
+                themeBtnColor: 'bg-white border-2 border-black',
+                statusBadges: {
+                    '미응답': 'bg-gray-300 text-black border border-gray-400',
+                    '도움 요청': 'bg-gray-200 text-gray-800 border border-gray-400',
+                    '응답 완료': 'bg-white text-black border border-gray-400',
+                    '연결 오류': 'bg-gray-100 text-gray-600 border border-gray-300'
+                }
+            }
+        };
+
+        const menuItems = [
+            { id: 'dashboard', label: '대시보드', icon: 'layout-dashboard' },
+            { id: 'targets', label: '대상자·일정', icon: 'users' },
+            { id: 'records', label: '안부 확인 기록', icon: 'phone-call' },
+            { id: 'followups', label: '후속 조치 관리', icon: 'clipboard-list' },
+            { id: 'reports', label: '요약 보고', icon: 'file-text' },
+        ];
+
+        const summaryCards = [
+            { title: '금일 확인 예정', count: 24, unit: '명' },
+            { title: '확인 결과 입력', count: 17, unit: '명' },
+            { title: '추가 확인 필요', count: 5, unit: '건' },
+            { title: '조치 진행 중', count: 2, unit: '건' },
+        ];
+
+        const priorityTasks = [
+            { id: 'L-0001', targetName: '대상자 A', status: '미응답', lastChecked: '오늘 09:10', manager: '담당자 1', followUp: '요약 보고' },
+            { id: 'L-0002', targetName: '대상자 B', status: '도움 요청', lastChecked: '오늘 09:25', manager: '담당자 2', followUp: '재연락 필요' },
+            { id: 'L-0003', targetName: '대상자 C', status: '응답 완료', lastChecked: '오늘 09:50', manager: '담당자 1', followUp: '완료' },
+            { id: 'L-0004', targetName: '대상자 D', status: '연결 오류', lastChecked: '오늘 10:00', manager: '담당자 3', followUp: '재연락 필요' }
+        ];
+
+        // 이벤트 핸들러 (HTML onclick에서 호출됨)
+        window.setTheme = (themeKey) => { state.currentTheme = themeKey; render(); };
+        window.setResolution = (res) => { state.resolution = res; render(); };
+        window.setActiveMenu = (menuId) => { state.activeMenu = menuId; render(); };
+        window.toggleDropdown = () => { state.isDropdownOpen = !state.isDropdownOpen; render(); };
+        window.openSettings = () => { state.isDropdownOpen = false; state.isSettingsModalOpen = true; render(); };
+        window.closeSettings = () => { state.isSettingsModalOpen = false; render(); };
+
+        // 뱃지 HTML 생성 함수
+        const getStatusBadgeHtml = (status, th) => {
+            const baseClass = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium";
+            const themeClass = th.statusBadges[status] || 'bg-gray-100 text-gray-800';
+            
+            let iconName = 'alert-circle';
+            if (status === '응답 완료') iconName = 'check-circle-2';
+            if (status === '연결 오류') iconName = 'clock';
+
+            return `
+                <span class="${baseClass} ${themeClass}">
+                    <i data-lucide="${iconName}" class="w-3 h-3 mr-1"></i>
+                    ${status}
+                </span>
+            `;
+        };
+
+        // UI 렌더링 코어 함수
+        function render() {
+            const th = themes[state.currentTheme];
+
+            const html = `
+                <div class="flex items-center justify-center w-full h-screen ${state.currentTheme === 'dark' ? 'bg-gray-900' : 'bg-stone-300'} transition-colors duration-300">
+                    
+                    <!-- 해상도 조절용 컨테이너 -->
+                    <div 
+                        class="flex w-full h-full ${th.bg} transition-all duration-500 shadow-2xl relative overflow-hidden"
+                        style="max-width: ${state.resolution === '1920x1080' ? '1920px' : '1280px'}; max-height: ${state.resolution === '1920x1080' ? '1080px' : '720px'};"
+                    >
+                        
+                        <!-- 사이드바 -->
+                        <aside class="w-64 flex-col hidden md:flex ${th.sidebarBg} ${state.currentTheme === 'mono' ? 'border-r border-gray-300' : ''} transition-colors duration-300">
+                            <div class="h-16 flex items-center px-6 border-b border-black/5">
+                                <span class="text-2xl font-black tracking-wider ${th.logo}">LUMI</span>
+                            </div>
+                            <nav class="flex-1 py-4 overflow-y-auto no-scrollbar">
+                                <ul class="space-y-1 px-3">
+                                    ${menuItems.map(item => {
+                                        const isActive = state.activeMenu === item.id;
+                                        return `
+                                        <li>
+                                            <button
+                                                onclick="window.setActiveMenu('${item.id}')"
+                                                class="w-full flex items-center px-4 py-3 rounded-xl text-sm transition-colors ${isActive ? th.sidebarActiveBg + ' ' + th.sidebarActiveText : th.sidebarText + ' ' + th.sidebarHover}"
+                                            >
+                                                <i data-lucide="${item.icon}" class="w-5 h-5 mr-3 ${isActive ? 'opacity-100' : 'opacity-70'}"></i>
+                                                ${item.label}
+                                            </button>
+                                        </li>
+                                        `;
+                                    }).join('')}
+                                </ul>
+                            </nav>
+
+                            <div class="p-4 ${state.currentTheme === 'mono' ? 'border-t border-gray-300' : ''}">
+                                <p class="text-sm font-medium ${th.sidebarText === 'text-gray-600' ? 'text-gray-900' : 'text-white'}">김복지 담당자</p>
+                                <p class="text-xs ${th.sidebarText}">행복복지센터</p>
+                            </div>
+                        </aside>
+
+                        <!-- 메인 콘텐츠 영역 -->
+                        <main class="flex-1 flex flex-col h-full overflow-hidden">
+                            
+                            <!-- 헤더 -->
+                            <header class="h-16 flex items-center justify-between px-8 border-b ${th.headerBg} ${th.border} transition-colors duration-300">
+                                <h2 class="text-lg font-semibold ${th.text}">
+                                    ${menuItems.find(m => m.id === state.activeMenu)?.label || '대시보드'}
+                                </h2>
+                                
+                                <div class="flex items-center space-x-6">
+                                    <!-- 검색창 -->
+                                    <div class="relative hidden sm:block">
+                                        <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 ${th.textMuted}"></i>
+                                        <input 
+                                            type="text" 
+                                            placeholder="대상자 검색..." 
+                                            class="pl-9 pr-4 py-1.5 border rounded-md text-sm focus:outline-none focus:ring-2 bg-transparent ${th.border} ${th.text} ${th.textMuted}"
+                                        />
+                                    </div>
+                                    
+                                    <!-- 알림 -->
+                                    <button class="p-1.5 rounded-full relative ${th.textMuted} hover:${th.text}">
+                                        <i data-lucide="bell" class="w-5 h-5"></i>
+                                        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                                    </button>
+
+                                    <!-- 프로필 드롭다운 -->
+                                    <div class="relative">
+                                        <button 
+                                            onclick="window.toggleDropdown()"
+                                            class="flex items-center space-x-2 p-1.5 rounded-md hover:bg-black/5 transition-colors ${th.text}"
+                                        >
+                                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${th.primaryBg} ${th.primaryText}">
+                                                김
+                                            </div>
+                                            <span class="text-sm font-medium hidden sm:block">김복지 담당자</span>
+                                            <i data-lucide="chevron-down" class="w-4 h-4 opacity-70"></i>
+                                        </button>
+
+                                        ${state.isDropdownOpen ? `
+                                        <div class="absolute right-0 mt-2 w-48 rounded-lg shadow-lg border ${th.cardBg} ${th.border} overflow-hidden z-50">
+                                            <div class="py-1">
+                                                <button class="w-full text-left px-4 py-2.5 text-sm flex items-center transition-colors ${th.text} ${th.tableRowHover}">
+                                                    <i data-lucide="user" class="w-4 h-4 mr-3 opacity-70"></i> 개인정보
+                                                </button>
+                                                <button 
+                                                    onclick="window.openSettings()"
+                                                    class="w-full text-left px-4 py-2.5 text-sm flex items-center transition-colors ${th.text} ${th.tableRowHover}"
+                                                >
+                                                    <i data-lucide="settings" class="w-4 h-4 mr-3 opacity-70"></i> 설정
+                                                </button>
+                                            </div>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </header>
+
+                            <!-- 대시보드 메인 내용 -->
+                            <div class="flex-1 overflow-auto p-8 no-scrollbar">
+                                <div class="max-w-6xl mx-auto space-y-8">
+                                    
+                                    <!-- 요약 카드 -->
+                                    <section>
+                                        <h3 class="text-sm font-semibold mb-4 uppercase tracking-wider ${th.textMuted}">오늘의 안부 확인 현황 (01/04)</h3>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            ${summaryCards.map(card => `
+                                                <div class="rounded-xl border p-5 shadow-sm flex flex-col justify-between transition-transform hover:-translate-y-0.5 ${th.cardBg} ${th.border}">
+                                                    <p class="text-sm font-medium ${th.textMuted}">${card.title}</p>
+                                                    <div class="mt-2 flex items-baseline">
+                                                        <span class="text-3xl font-bold tracking-tight ${th.text}">${card.count}</span>
+                                                        <span class="ml-1 text-sm font-medium ${th.textMuted}">${card.unit}</span>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </section>
+
+                                    <!-- 우선 확인할 업무 테이블 -->
+                                    <section class="rounded-xl shadow-sm border overflow-hidden ${th.cardBg} ${th.border}">
+                                        <div class="px-6 py-5 border-b flex justify-between items-center ${th.cardBg} ${th.border}">
+                                            <div>
+                                                <h3 class="text-lg font-semibold ${th.text}">우선 확인할 업무</h3>
+                                                <p class="text-sm mt-1 ${th.textMuted}">담당자의 빠른 판단과 후속 조치가 필요한 목록입니다.</p>
+                                            </div>
+                                            <button class="text-sm font-medium px-3 py-1.5 rounded-md transition-colors ${th.primaryBg} ${th.primaryText} ${th.primaryHover}">
+                                                전체 보기
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-left border-collapse">
+                                                <thead>
+                                                    <tr class="text-sm font-medium uppercase tracking-wider border-b ${th.tableHeaderBg} ${th.textMuted} ${th.border}">
+                                                        <th class="px-6 py-4">대상자</th>
+                                                        <th class="px-6 py-4">안부 결과</th>
+                                                        <th class="px-6 py-4">최근 확인</th>
+                                                        <th class="px-6 py-4">담당자</th>
+                                                        <th class="px-6 py-4">후속 상태</th>
+                                                        <th class="px-6 py-4">액션</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y ${th.cardBg} ${th.border} divide-stone-200/20">
+                                                    ${priorityTasks.map(task => `
+                                                        <tr class="transition-colors group cursor-pointer ${th.tableRowHover}">
+                                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                                <div class="flex items-center">
+                                                                    <div class="text-sm font-medium ${th.text}">${task.targetName}</div>
+                                                                    <div class="ml-2 text-xs ${th.textMuted}">${task.id}</div>
+                                                                </div>
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                                ${getStatusBadgeHtml(task.status, th)}
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm ${th.textMuted}">${task.lastChecked}</td>
+                                                            <td class="px-6 py-4 whitespace-nowrap text-sm ${th.textMuted}">${task.manager}</td>
+                                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                                <span class="px-2 py-1 rounded text-sm font-medium border ${th.text} ${th.border} ${th.bg}">
+                                                                    ${task.followUp}
+                                                                </span>
+                                                            </td>
+                                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                                <button class="text-sm px-3 py-1 rounded border transition-colors ${th.primaryText} ${th.border} ${th.primaryHover}">
+                                                                    처리하기
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </main>
+
+                        <!-- 설정 모달 -->
+                        ${state.isSettingsModalOpen ? `
+                        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity">
+                            <div class="w-full max-w-sm p-6 rounded-2xl shadow-2xl border ${th.cardBg} ${th.border}">
+                                <div class="flex items-center justify-between mb-6">
+                                    <h3 class="text-lg font-bold ${th.text}">환경 설정</h3>
+                                    <button 
+                                        onclick="window.closeSettings()"
+                                        class="p-1.5 rounded-full hover:bg-black/5 transition-colors ${th.textMuted}"
+                                    >
+                                        <i data-lucide="x" class="w-5 h-5"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-6">
+                                    <!-- 테마 설정 -->
+                                    <div>
+                                        <h4 class="text-sm font-semibold mb-3 ${th.text}">테마 설정</h4>
+                                        <div class="flex flex-col space-y-2">
+                                            ${Object.keys(themes).map(key => `
+                                                <button 
+                                                    onclick="window.setTheme('${key}')"
+                                                    class="flex items-center justify-between p-3 rounded-xl border transition-all duration-200 
+                                                    ${state.currentTheme === key 
+                                                        ? `ring-2 ring-offset-1 ring-gray-400 ${th.primaryBg} ${th.border}` 
+                                                        : `border-transparent hover:bg-black/5`}"
+                                                >
+                                                    <div class="flex items-center space-x-3">
+                                                        <div class="w-5 h-5 rounded-full shadow-sm ${themes[key].themeBtnColor}"></div>
+                                                        <span class="text-sm font-medium ${th.text}">${themes[key].name}</span>
+                                                    </div>
+                                                    ${state.currentTheme === key ? `<i data-lucide="check-circle-2" class="w-5 h-5 ${th.primaryText}"></i>` : ''}
+                                                </button>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- 해상도 설정 -->
+                                    <div>
+                                        <h4 class="text-sm font-semibold mb-3 ${th.text}">해상도 설정</h4>
+                                        <div class="flex flex-col space-y-2">
+                                            ${['1920x1080', '1280x720'].map(res => `
+                                                <button 
+                                                    onclick="window.setResolution('${res}')"
+                                                    class="flex items-center justify-between p-3 rounded-xl border transition-all duration-200 
+                                                    ${state.resolution === res 
+                                                        ? `ring-2 ring-offset-1 ring-gray-400 ${th.primaryBg} ${th.border}` 
+                                                        : `border-transparent hover:bg-black/5`}"
+                                                >
+                                                    <span class="text-sm font-medium ${th.text}">${res}</span>
+                                                    ${state.resolution === res ? `<i data-lucide="check-circle-2" class="w-5 h-5 ${th.primaryText}"></i>` : ''}
+                                                </button>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-8 flex justify-end">
+                                    <button 
+                                        onclick="window.closeSettings()"
+                                        class="px-5 py-2 text-sm font-medium rounded-lg transition-colors ${th.primaryBg} ${th.primaryText} ${th.primaryHover}"
+                                    >
+                                        닫기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+
+                    </div>
+                </div>
+            `;
+
+            // HTML을 화면에 꽂아넣기
+            document.getElementById('root').innerHTML = html;
+            
+            // 삽입된 HTML 내의 Lucide 아이콘들 다시 그리기
+            lucide.createIcons();
+        }
+
+        // 초기 화면 그리기
+        render();
+
+    </script>
+</body>
+</html>
